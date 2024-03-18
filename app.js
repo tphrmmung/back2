@@ -1,24 +1,27 @@
-require('dotenv').config()
-const express = require('express')
-const cors = require('cors')
-const notFound = require('./middlewares/notFound')
-const errorMiddleware = require('./middlewares/error')
-const authRoute = require('./routes/auth-route')
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const notFound = require("./middlewares/notFound");
+const errorMiddleware = require("./middlewares/error");
+const authRoute = require("./routes/auth-route");
+const todoRoute = require("./routes/admin_route");
+// const adminReservation =require("./routes/admin_route");
+// const authenticate = require("./middlewares/authenticate");
 const app = express()
 
+app.use(cors());
+app.use(express.json());
 
-app.use(cors())
-app.use(express.json())
-
-//service 
-app.use('/auth', authRoute)
-
+//service
+app.use("/auth", authRoute);
+app.use("/admin", todoRoute);
+// app.use("/admin", adminReservation);
 
 // notFond
-app.use( notFound )
+app.use(notFound);
 
 // error
-app.use( errorMiddleware )
+app.use(errorMiddleware);
 
-let port = process.env.PORT || 8000
-app.listen(port, ()=> console.log('Server on Port : ', port ))
+let port = process.env.PORT || 8000;
+app.listen(port, () => console.log("Server on Port : ", port));

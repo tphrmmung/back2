@@ -10,25 +10,69 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id       Int     @id @default(autoincrement())
-  username String  @db.VarChar(30)
-  password String  @db.VarChar(72)
-  email    String?
-  todo     Todo[]
+enum Role {
+  USER
+  ADMIN
 }
 
-model Todo {
-  id      Int      @id @default(autoincrement())
-  title   String   @db.VarChar(150)
-  status  Status   @default(pending)
-  duedate DateTime @db.Date
-  user_id Int
-  user    User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+model User {
+  user_id   Int       @id @default(autoincrement())
+  username  String    @unique @db.VarChar(30)
+  password  String    @db.VarChar(72)
+  firstname String    @db.VarChar(50)
+  lastname  String    @db.VarChar(50)
+  email     String?
+  phone     String    @db.VarChar(10)
+  address   String    @db.VarChar(100)
+  role      String    @db.VarChar(10)
+  
+  Booking   Booking[]
+
+  @@map("users")
+}
+
+model Booking {
+  booking_id            Int       @id @default(autoincrement())
+  booking_date_and_time DateTime  @db.Date
+  Numberoftables        Int
+  location              String    @db.VarChar(100)
+  User                  User      @relation(fields: [Userid], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
+  Userid                Int       @map("User_id")
+  Tables                Tables    @relation(fields: [Tablesid], references: [Tables_id], onDelete: Cascade, onUpdate: Cascade)
+  Tablesid              Int       @map("Tables_id")
+  Payment               Payment[]
+
+  @@map("booking")
+}
+
+model Payment {
+  Payment_id    Int      @id @default(autoincrement())
+  paymentmethod String   @db.VarChar(190)
+  paymentamount String   @db.VarChar(10)
+  paymentstatus String   @db.VarChar(200)
+  payment_img           String
+  booking       Booking  @relation(fields: [bookingId], references: [booking_id], onDelete: Cascade, onUpdate: Cascade)
+  bookingId     Int      @map("booking_id")
+  Recipt        Recipt[]
+}
+
+model Recipt {
+  Recipt_id Int     @id @default(autoincrement())
+  user_ID   String  @db.VarChar(50)
+  Payment   Payment @relation(fields: [Paymentid], references: [Payment_id], onDelete: Cascade, onUpdate: Cascade)
+  Paymentid Int     @map("Payment_id")
+}
+
+model Tables {
+  Tables_id      Int       @id @default(autoincrement())
+  Tables_img     String
+  Tables_details String    @db.VarChar(100)
+  tabes_price    Int
+  Tables_status  String
+  Booking        Booking[]
 }
 
 enum Status {
-  pending
-  doing
-  done
+  FREE
+  BUSY
 }
