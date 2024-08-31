@@ -6,10 +6,10 @@ const password = bcrypt.hashSync('12345')
 const adminP = bcrypt.hashSync('admin')
 const userData = [
     {username : 'tip', password , email : 'tip@gmail.com',firstname:'tip',lastname: "tt", phone : "0321654789",address:"บ้านไร่นาๆไพ",role:'USER' },
-    {username : 'Jeff', password , email : 'jsff@gmail.com', firstname:'tip',lastname: "tt",phone : "0321654789",address:"บ้านไร่นาๆไพ",role:'USER' },
-    {username : 'Bonz', password , email : 'Bonz@gmail.com', firstname:'tip',lastname: "tt",phone : "0321654789",address:"บ้านไร่นาๆไพ", role:'ADMIN' },
-    {username : 'benz', password , email : 'Benz@gmail.com',firstname:'tip',lastname: "tt",phone : "0321654789",address:"บ้านไร่นาๆไพ", role:'USER' },
-    {username : 'war', password , email : 'war@gmail.com',firstname:'tip',lastname: "tt",phone : "0321654789",address:"บ้านไร่นาๆไพ",  role:'ADMIN'},
+    {username : 'Jeff', password , email : 'jsff@gmail.com', firstname:'Jeff',lastname: "tt",phone : "0321654789",address:"บ้านไร่นาๆไพ",role:'USER' },
+    {username : 'Bonz', password , email : 'Bonz@gmail.com', firstname:'Bonz',lastname: "tt",phone : "0321654789",address:"บ้านไร่นาๆไพ", role:'ADMIN' },
+    {username : 'benz', password , email : 'Benz@gmail.com',firstname:'benz',lastname: "tt",phone : "0321654789",address:"บ้านไร่นาๆไพ", role:'USER' },
+    {username : 'war', password , email : 'war@gmail.com',firstname:'war',lastname: "tt",phone : "0321654789",address:"บ้านไร่นาๆไพ",  role:'ADMIN'},
     {username : 'admin', password: adminP , email : 'admin@gmail.com',firstname:'admin',lastname: "tt",phone : "0000000000",address:"บ้านไร่นาๆไพ",  role:'ADMIN'},
 
 ]

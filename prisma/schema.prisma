@@ -16,49 +16,65 @@ enum Role {
 }
 
 model User {
-  user_id   Int       @id @default(autoincrement())
-  username  String    @unique @db.VarChar(30)
-  password  String    @db.VarChar(72)
-  firstname String    @db.VarChar(50)
-  lastname  String    @db.VarChar(50)
+  user_id   Int     @id @default(autoincrement())
+  username  String  @unique @db.VarChar(30)
+  password  String  @db.VarChar(72)
+  firstname String  @db.VarChar(50)
+  lastname  String  @db.VarChar(50)
   email     String?
-  phone     String    @db.VarChar(10)
-  address   String    @db.VarChar(100)
-  role      String    @db.VarChar(10)
-  
-  Booking   Booking[]
+  phone     String  @db.VarChar(10)
+  address   String  @db.VarChar(100)
+  role      Role    @default(USER)
+
+  Booking Booking[]
 
   @@map("users")
 }
 
 model Booking {
-  booking_id            Int       @id @default(autoincrement())
-  booking_date_and_time DateTime  @db.Date
+  booking_id            Int           @id @default(autoincrement())
+  booking_date_and_time DateTime
   Numberoftables        Int
-  location              String    @db.VarChar(100)
-  User                  User      @relation(fields: [Userid], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
-  Userid                Int       @map("User_id")
-  Tables                Tables    @relation(fields: [Tablesid], references: [Tables_id], onDelete: Cascade, onUpdate: Cascade)
-  Tablesid              Int       @map("Tables_id")
+  bookingstatus         Statusbooking @default(Waiting)
+  location              String        @db.VarChar(100)
+  note                  String?       @db.VarChar(100) //เหตุผล
+  User                  User          @relation(fields: [Userid], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
+  Userid                Int           @map("User_id")
+  Tables                Tables        @relation(fields: [Tablesid], references: [Tables_id], onDelete: Cascade, onUpdate: Cascade)
+  Tablesid              Int           @map("Tables_id")
   Payment               Payment[]
 
   @@map("booking")
 }
 
+enum Statusbooking {
+  Waiting // รออนุมัติ
+  approve // อนุมัติเเล้ว
+  cancel  // ยกเลิก
+  success //สำเร๊จ
+}
+
 model Payment {
-  Payment_id    Int      @id @default(autoincrement())
-  paymentmethod String   @db.VarChar(190)
-  paymentamount String   @db.VarChar(10)
-  paymentstatus String   @db.VarChar(200)
-  payment_img           String
-  booking       Booking  @relation(fields: [bookingId], references: [booking_id], onDelete: Cascade, onUpdate: Cascade)
-  bookingId     Int      @map("booking_id")
-  Recipt        Recipt[]
+  Payment_id     Int      @id @default(autoincrement())
+  paymentmethod  String   @db.VarChar(190)
+  paymentamount  String   @db.VarChar(10)
+  paymentstatus  Status   @default(Pending)
+  deposit_amount Int // ราคาที่มัดจำ
+  remain         Int // ยอกคงเหลือ
+  payment_img    String
+  total_pay_img  String?
+  booking        Booking  @relation(fields: [bookingId], references: [booking_id], onDelete: Cascade, onUpdate: Cascade)
+  bookingId      Int      @map("booking_id")
+  Recipt         Recipt[]
+}
+
+enum Status {
+  Pending
+  Paid
 }
 
 model Recipt {
   Recipt_id Int     @id @default(autoincrement())
-  user_ID   String  @db.VarChar(50)
   Payment   Payment @relation(fields: [Paymentid], references: [Payment_id], onDelete: Cascade, onUpdate: Cascade)
   Paymentid Int     @map("Payment_id")
 }
@@ -66,13 +82,8 @@ model Recipt {
 model Tables {
   Tables_id      Int       @id @default(autoincrement())
   Tables_img     String
-  Tables_details String    @db.VarChar(100)
+  Tables_details String    @db.VarChar(550)
   tabes_price    Int
-  Tables_status  String
   Booking        Booking[]
-}
-
-enum Status {
-  FREE
-  BUSY
+  deposit        Int // เปอร์เซ็นต์มัดจำ
 }
