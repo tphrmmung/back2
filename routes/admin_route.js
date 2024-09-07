@@ -9,34 +9,34 @@ const upload = require('../middlewares/upload')
 router.get("/users", adminController.getUsers) // แสดงข้อมูลผู้ใช้
 router.get("/Tables", adminController.getTables) // แสดงข้อมูลโต๊ะ
 router.get("/Product", adminController.getProduct) //// แสดงข้อมูลผู้ใช้
-router.post("/createTodo" ,upload.array("image" , 2),adminController.createTodo)
+router.post("/createTodo" , upload.array("image" , 2), adminController.createTodo)
 router.get("/payment", adminController.getpayment)
 router.get("/payment/:booking_id", adminController.getpaymentByBooking)
 router.get("/recipt", authenticate, adminController.getrecipt)
 router.get("/booking", adminController.getbooking)
-router.get("/bookinguser", adminController.getbookingUser)
+router.get("/bookinguser", authenticate, adminController.getbookingUser)
 router.get("/booking/table/:table_id", adminController.getBookingByID)
-
-
+router.get("/booking/wait/payment", authenticate, adminController.getbookingWaitPay)
 router.get("/Check_information",adminController.getCheck_information)
-
 router.get("/booking/:bookingId",adminController.getBookingId)
-
 router.get("/recipt_user",adminController.getrecipt_user)
 router.get("/receipt/:recpId", adminController.getReceiptById)
-// router.get("/ReservationForm_user",adminController.getReservationForm_user)
 router.get("/userbooking", authenticate,adminController.userbooking)
+// router.get("/ReservationForm_user",adminController.getReservationForm_user)
 
-
+router.post("/confirm/payment", upload.array("image" , 1), adminController.confirmPayment)
 router.post("/receipt",adminController.createReceipt)
 router.post("/bookings", adminController.createBookings)
 router.post('/payment/:bookingId' ,authenticate,  upload.array("image" , 1),adminController.payment)
 
 
 router.delete("/deleteProduct_details/:Tables_id", adminController.deleteProduct_details)
+
 router.patch('/updateProduct/:Tables_id',adminController.updateProduct)
-router.patch('/payment/:id',authenticate,adminController.patchchgstatus)
+router.patch('/payment/:id', authenticate, adminController.patchchgstatus)
 router.patch('/bookings/status/:booking_id', authenticate, adminController.updateStatusBookings)
+// router.patch('/profileData/:userId',authenticate,adminController.updateProfile)// สำหรับอัปเดตโปรไฟล์ผู้ใช้
+
 
 // router.get("/Tadles", adminController.getTadles)
 

@@ -62,15 +62,17 @@ model Payment {
   deposit_amount Int // ราคาที่มัดจำ
   remain         Int // ยอกคงเหลือ
   payment_img    String
-  total_pay_img  String?
+  total_pay_img  String? //ยอดเงินก้อนสุดท้าย
   booking        Booking  @relation(fields: [bookingId], references: [booking_id], onDelete: Cascade, onUpdate: Cascade)
   bookingId      Int      @map("booking_id")
   Recipt         Recipt[]
 }
 
 enum Status {
-  Pending
-  Paid
+  Pending  //รอตรวจ
+  Paid //ชำระเเล้ว
+  Progress //กำลำงดําเนินการ
+  Work //งานสำเร็จ
 }
 
 model Recipt {

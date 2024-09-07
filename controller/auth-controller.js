@@ -3,17 +3,34 @@ const jwt = require("jsonwebtoken");
 const db = require("../models/db");
 
 module.exports.register = async (req, res, next) => {
-  const { username, password, confirmPassword, firstname,lastname, email, phone,address } = req.body;
+  const { username, password, confirmPassword, firstname, lastname, email, phone, address } = req.body;
   console.log(req.body);
+
   try {
-    if (!(username && password && confirmPassword)) {
-      return next(new Error("Fullfill all inputs"));
+    // ตรวจสอบว่ามีการกรอกข้อมูลที่จำเป็นครบถ้วน
+    if (!(username && password && confirmPassword && email)) {
+      return next(new Error("กรุณากรอกข้อมูลให้ครบถ้วน"));
     }
+
+    // ตรวจสอบการยืนยันรหัสผ่าน
     if (confirmPassword !== password) {
-      throw new Error("confirm password not match");
+      throw new Error("รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน");
     }
+
+    // ตรวจสอบว่ามีอีเมลนี้ในฐานข้อมูลแล้วหรือไม่
+    const existingUser = await db.user.findFirst({
+      where: { email: email },
+    });
+
+    if (existingUser) {
+      return res.status(422).json({ message: "อีเมลนี้ถูกลงทะเบียนไว้แล้ว" });
+    }
+    
+    // แฮชรหัสผ่าน
     const hashedPassword = await bcrypt.hash(password, 8);
     console.log(hashedPassword);
+
+    // สร้างผู้ใช้ใหม่
     const data = {
       username,
       password: hashedPassword,
@@ -22,16 +39,15 @@ module.exports.register = async (req, res, next) => {
       email,
       phone,
       address,
-      role: "USER",
+      role: "USER", // ตรวจสอบว่าค่าของ role ถูกต้อง
     };
-    const rs = await db.user.create({ data: data });
-    console.log(rs);
-    console.log(data);
 
-    res.json({ msg: "Register successful" });
+    await prisma.user.create({ data });
+
+    res.json({ msg: "การลงทะเบียนสำเร็จ" });
   } catch (err) {
     console.log(err);
-    // next(err);
+    next(err);
   }
 };
 
@@ -53,7 +69,7 @@ module.exports.login = async (req, res, next) => {
     const token = jwt.sign(payload, process.env.JWT_SECERT, {
       expiresIn: "30d",
     });
-    console.log(token);
+
     res.json({ token: token });
   } catch (err) {
     next(err);

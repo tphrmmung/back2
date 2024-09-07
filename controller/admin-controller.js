@@ -5,7 +5,11 @@ const jwt = require("jsonwebtoken");
 
 exports.getUsers = async (req, res, next) => {
   try {
-    const users = await db.user.findMany();
+    const users = await db.user.findMany({
+      orderBy: {
+        user_id: "asc",
+      },
+    });
     res.json({ users });
     next();
   } catch (err) {
@@ -25,9 +29,12 @@ exports.getTables = async (req, res, next) => {
 
 exports.getProduct = async (req, res, next) => {
   try {
-    const Product = await db.tables.findMany();
+    const Product = await db.tables.findMany({
+      orderBy: {
+        Tables_id: "desc",
+      },
+    });
     res.json({ Product });
-    console.log(Product);
   } catch (err) {
     next(err);
   }
@@ -59,9 +66,20 @@ exports.createTodo = async (req, res, next) => {
 
 exports.getpayment = async (req, res, next) => {
   try {
-    const payment = await db.payment.findMany();
+    const payment = await db.payment.findMany({
+      include: {
+        booking: {
+          include: {
+            User: true,
+            Tables: true,
+          },
+        },
+      },
+      orderBy: {
+        Payment_id: "desc",
+      },
+    });
     res.json({ payment });
-    console.log(payment);
   } catch (err) {
     next(err);
   }
@@ -69,16 +87,14 @@ exports.getpayment = async (req, res, next) => {
 
 exports.getpaymentByBooking = async (req, res, next) => {
   try {
-
     const { booking_id } = req.params;
-    
+
     const payment = await db.payment.findMany({
       where: {
-        bookingId: Number(booking_id)
-      }
+        bookingId: Number(booking_id),
+      },
     });
     res.json({ payment });
-
   } catch (err) {
     next(err);
   }
@@ -100,6 +116,9 @@ exports.getrecipt = async (req, res, next) => {
           },
         },
       },
+      orderBy: {
+        Recipt_id: "desc",
+      },
     });
     res.json({ recipt });
     // console.log(recipt);
@@ -112,7 +131,6 @@ exports.getCheck_information = async (req, res, next) => {
   try {
     const Check_information = await db.booking.findMany();
     res.json({ Check_information });
-    console.log(Check_information);
   } catch (err) {
     next(err);
   }
@@ -145,7 +163,6 @@ exports.createBookings = async (req, res, next) => {
     Numberoftables,
     location,
     bookingstatus,
-        
   } = req.body;
   try {
     const dateTime = new Date(booking_date_and_time);
@@ -155,9 +172,7 @@ exports.createBookings = async (req, res, next) => {
         AND: [{ Tablesid: Number(Tables_id) }, { bookingstatus: "approve" }],
       },
     });
-    
-    console.log(checkBooking.length);
-    
+
     if (checkBooking.length >= 2) {
       return res
         .status(400)
@@ -170,7 +185,7 @@ exports.createBookings = async (req, res, next) => {
         Numberoftables: +Numberoftables,
         location,
         bookingstatus,
-        note,
+        note: "",
         Tables: {
           connect: {
             Tables_id: +Tables_id,
@@ -184,7 +199,6 @@ exports.createBookings = async (req, res, next) => {
       },
     });
     res.json({ booking });
-    // console.log(dateTime);
   } catch (err) {
     next(err);
     console.log(err);
@@ -194,45 +208,70 @@ exports.createBookings = async (req, res, next) => {
 exports.updateStatusBookings = async (req, res, next) => {
   try {
     const { booking_id } = req.params;
-    const { status } = req.body;
-
+    const { status, note } = req.body;
+    console.log(req.body)
+    // อัปเดตสถานะการจอง
     const updateStatus = await db.booking.update({
       where: {
         booking_id: Number(booking_id),
       },
       data: {
         bookingstatus: status,
+        note: note,
       },
       include: {
         User: true,
-      }
+      },
     });
 
+    // สร้าง payload สำหรับ JWT
     const payload = { id: updateStatus.User.user_id };
     const token = jwt.sign(payload, process.env.JWT_SECERT, {
       expiresIn: "30d",
     });
 
-    const mailOptions = {
-      from: 'ชื่อเมล@gmail.com',  // ใช้ no-reply email address ที่คุณต้องการ
-      to: updateStatus.User.email,  // อีเมลผู้รับ
-      subject: `ระบบบจองโต๊ะจีน หมายเลข ID : ${updateStatus.booking_id}`,  // หัวข้อเมล
-      text: `ระบบได้ทำการอนุมัติเรียบร้อยเเล้ว กรุณาชำระเงินหรือคลิกที่ลิ้งค์ด้านล่าง
+    // สร้าง mailOptions เบื้องต้น
+    let mailText = `เรียน ลูกค้าที่เคารพ
+
+                การจองของท่านระบบได้ทำการอนุมัติเรียบร้อยแล้ว กรุณาดำเนินการชำระเงินหรือคลิกที่ลิ้งค์ด้านล่าง 
+                หากท่านมีคำถามเพิ่มเติมหรือต้องการความช่วยเหลือ กรุณาติดต่อทีมงานของเรา 098-620-1508
+
+                ขอขอบคุณที่ใช้บริการ`;
+    if (note) {
+      mailText = `เรียน ลูกค้าผู้มีอุปการะคุณ
+
+                  ทางระบบขอเรียนแจ้งให้ทราบว่า การจองของท่านได้ถูกยกเลิก เนื่องจากเหตุผลดังต่อไปนี้ : ${note}
+                  หากท่านต้องการสอบถามข้อมูลเพิ่มเติมหรือมีข้อสงสัยใด ๆ สามารถติดต่อทีมงานของเราได้ทันที 
+                  ทางเรายินดีให้บริการและแก้ไขปัญหาเพื่อความพึงพอใจสูงสุดของท่าน
+
+                  ขออภัยในความไม่สะดวกที่เกิดขึ้น และขอขอบคุณที่ท่านให้ความสนใจและไว้วางใจในการใช้บริการของเรา
+
+                  ขอแสดงความนับถือ
+      \nหมายเหตุ : ข้อความและ e-mail นี้เป็นการสร้างอัตโนมัติจากระบบฯ ไม่ต้องตอบกลับ`;
+    } else {
+      mailText += `
       \nคลิกลิ้งค์
       \nhttp://localhost:5173/payment_user/${updateStatus.booking_id}/${token}
-      \n\nหมายเหตุ : ข้อความและ e-mail นี้เป็นการสร้างอัตโนมัติจากระบบฯ ไม่ต้องตอบกลับ` 
+      \n\nหมายเหตุ : ข้อความและ e-mail นี้เป็นการสร้างอัตโนมัติจากระบบฯ ไม่ต้องตอบกลับ`;
+    }
+
+    const mailOptions = {
+      from: "ชื่อเมล@gmail.com", // ใช้ no-reply email address ที่คุณต้องการ
+      to: updateStatus.User.email, // อีเมลผู้รับ
+      subject: `TarnTip เซ็นเตอร์โต๊ะจีน หมายเลข ID : ${updateStatus.booking_id}`, // หัวข้อเมล
+      text: mailText, // ข้อความที่จะแสดงในอีเมล
     };
 
+    // ส่งอีเมล
     transporter.sendMail(mailOptions, (err, info) => {
-        if (err) {
-            console.log(err);
-            res.status(400).json({ message: "ไม่สามารถส่ง email ได้"})
-        } else {
-            console.log('Email sent: ' + info.response);
-            res.json({ message: "อัพเดทข้อมูลเรียบร้อยแล้ว" });
-        }
-    })
-
+      if (err) {
+        console.log(err);
+        res.status(400).json({ message: "ไม่สามารถส่ง email ได้" });
+      } else {
+        console.log("Email sent: " + info.response);
+        res.json({ message: "อัพเดทข้อมูลเรียบร้อยแล้ว" });
+      }
+    });
   } catch (err) {
     next(err);
     console.log(err);
@@ -253,21 +292,31 @@ exports.updateProduct = async (req, res, next) => {
     next(err);
   }
 };
-// exports.updateProduct = async (req, res, next) => {
-//   const { Tables_id } = req.params;
-//   const {
-//     Tables_img,
-//     tabes_price,
-//     Tables_details,
-//     author,
-//   } = req.body;
+
+// // อัปเดตข้อมูลโปรไฟล์
+// exports.updateProfile = async (req, res, next) => {
+//   const { userId } = req.params; // ดึง ID ของผู้ใช้จาก URL
+//   const { profileImg, username, email, bio } = req.body; // ข้อมูลที่ต้องการอัปเดตจาก body ของ request
+
+//   // ตรวจสอบข้อมูลที่ได้รับ
+//   if (!username || !email) {
+//     return res.status(400).json({ msg: "กรุณากรอกชื่อผู้ใช้และอีเมลให้ครบถ้วน" });
+//   }
+
 //   try {
-//     const rs = await db.tables.update({
-//       data: { Tables_img, tabes_price, Tables_details },
-//       where: { Tables_id: Number(Tables_id) },
-//     });
-//     res.json({ msg: "Update ok", result: rs });
+//     const updatedUser = await User.findByIdAndUpdate(userId, {
+//       profileImg,
+//       username,
+//       email,
+//       bio
+//     }, { new: true });
+
+//     if (!updatedUser) {
+//       return res.status(404).json({ msg: "ไม่พบผู้ใช้ที่ต้องการอัปเดต" });
+//     }
+//     res.status(200).json({ msg: "อัปเดตข้อมูลโปรไฟล์สำเร็จ", user: updatedUser });
 //   } catch (err) {
+//     console.error("Error during profile update:", err);
 //     next(err);
 //   }
 // };
@@ -300,7 +349,7 @@ exports.payment = async (req, res, next) => {
     });
     const imageUrArray = await Promise.all(imagePromise);
 
-    const remain = Number(amount) - Number(deposit_amount)
+    const remain = Number(amount) - Number(deposit_amount);
 
     const payment = await db.payment.create({
       data: {
@@ -329,7 +378,6 @@ exports.getrecipt_user = async (req, res, next) => {
   try {
     const recipt_user = await db.recipt.findMany();
     res.json({ recipt_user });
-    console.log(recipt_user);
   } catch (err) {
     next(err);
   }
@@ -352,7 +400,6 @@ exports.getReservationForm_user = async (req, res, next) => {
       },
     });
     res.json({ ReservationForm_user });
-    console.log(ReservationForm_user);
   } catch (err) {
     next(err);
   }
@@ -474,15 +521,31 @@ exports.getReceiptById = async (req, res, next) => {
 
 exports.getbookingUser = async (req, res, next) => {
   try {
-    const booking = await db.booking.findMany({
-      include: {
-        User: true,
-        Tables: true,
+    // const bookingID = await db.booking.findFirst({
+    //   where: {
+    //     Userid: Number(req.user.user_id),
+    //   },
+    // });
+
+    const booking = await db.payment.findMany({
+      where: {
+        booking: {
+          User: {
+            user_id: Number(req.user.user_id),
+          }
+        },
       },
+      include: {
+        booking: {
+          include: {
+            User: true,
+            Tables: true,
+          },
+        },
+      }, 
     });
 
     res.json({ booking });
-    console.log(booking);
   } catch (err) {
     next(err);
   }
@@ -501,33 +564,114 @@ exports.getbooking = async (req, res, next) => {
     });
 
     res.json({ booking });
-    console.log(booking);
   } catch (err) {
     next(err);
   }
 };
 
 exports.getBookingByID = async (req, res, next) => {
-  try{
+  try {
     const { table_id } = req.params;
 
     const checkBookingTable = await db.booking.findMany({
       where: {
         AND: [
           { Tablesid: Number(table_id) },
-          { bookingstatus: 'approve' }
-        ]
-      }
-    })
+          { bookingstatus: "Waiting" || "approve" },
+        ],
+      },
+    });
 
-    if(checkBookingTable.length >= 2){
-      return res.status(400).json({ message: "ไม่สามารถจองได้ในขณะนี้เนื่องจากจำนวนโต๊ะเต็มเเล้ว" })
+    if (checkBookingTable.length >= 2) {
+      return res
+        .status(400)
+        .json({
+          message: "ไม่สามารถจองได้ในขณะนี้เนื่องจากจำนวนโต๊ะเต็มเเล้ว",
+        });
     }
 
-    res.json({message : "success!"})
+    console.log(checkBookingTable.length)
 
+    res.json({ message: "success!" });
+  } catch (err) {
+    next(err);
+    console.log(err);
+  }
+};
+
+exports.getbookingWaitPay = async (req, res, next) => {
+  try {
+    const booking = await db.booking.findMany({
+      where: {
+        AND: [
+          { Userid: Number(req.user.user_id )},
+        ]
+      },
+      include: {
+        User: true,
+        Tables: true,
+      },
+      orderBy: {
+        booking_id: "desc",
+      },
+    })
+
+    res.json({ booking })
   }catch(err){
     next(err)
     console.log(err)
   }
 }
+
+exports.confirmPayment = async (req, res, next) => {
+  try {
+    const { Payment_id, Payment_Price } = req.body;
+
+    const imagePromise = req.files.map((file) => {
+      return clounUpload(file.path);
+    });
+
+    const imageUrArray = await Promise.all(imagePromise);
+
+    const checkPayment = await db.payment.findFirst({
+      where: {
+        Payment_id: Number(Payment_id),
+      },
+    });
+
+    const total_Price = Number(checkPayment.remain) - Number(Payment_Price);
+
+    const confirmPay = await db.payment.update({
+      where: {
+        Payment_id: Number(Payment_id),
+      },
+      data: {
+        total_pay_img: imageUrArray[0],
+        paymentstatus: "Work",
+        remain: Number(total_Price),
+      },
+      include: {
+        booking: {
+          include: {
+            User: true,
+            Tables: true,
+          },
+        },
+      },
+    });
+
+    const changeBook = await db.booking.update({
+      where: {
+        booking_id: Number(confirmPay.booking.booking_id),
+      },
+      data: {
+        bookingstatus: "success",
+      },
+    });
+
+    res.json({ result: confirmPay, status: "success!", code: 200 });
+  } catch (err) {
+    next(err);
+    console.log(err);
+  }
+};
